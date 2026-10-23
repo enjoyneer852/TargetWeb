@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TARGET PLUS 目標星級教育中心 - 家長導師溝通與測考評測平台</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .tab-btn.active {
+            border-bottom: 2px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
+
+    <header class="bg-white text-slate-800 shadow-sm sticky top-0 z-50 border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white font-black px-3 py-1.5 rounded-xl text-lg tracking-wider shadow">
+                    TARGET+
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm tracking-tight text-slate-950">TARGET PLUS 目標星級教育中心</h1>
+                    <p class="text-[11px] text-slate-500">家長導師溝通與校內測考評測雲端平台 (DeepSeek AI 驅動)</p>
+                </div>
+            </div>
+
+            <!-- Role Switcher -->
+            <div class="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <button id="btn-tutor" onclick="switchRole('tutor')" class="tab-btn active px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-chalkboard-user"></i> 導師端 (記錄/測考評估)
+                </button>
+                <button id="btn-parent" onclick="switchRole('parent')" class="tab-btn px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
+                    <i class="fa-solid fa-users"></i> 家長端 (即時查看)
+                </button>
+                <button id="btn-admin" onclick="switchRole('admin')" class="tab-btn px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
+                    <i class="fa-solid fa-database"></i> 管理層 (Spreadsheet / Drive)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- ==================== TUTOR VIEW ==================== -->
+        <section id="tutorView" class="space-y-6">
+            <!-- Tutor Sub-tabs -->
+            <div class="bg-white rounded-2xl p-2 shadow-sm border border-slate-200 flex border-b">
+                <button id="tutorTabLessonBtn" onclick="switchTutorTab('lesson')" class="px-4 py-2 font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none transition-all flex items-center gap-2 text-xs md:text-sm">
+                    <i class="fa-solid fa-pen-to-square"></i> 1. 日常課堂表現錄入 (Sheet 1)
+                </button>
+                <button id="tutorTabExamBtn" onclick="switchTutorTab('exam')" class="px-4 py-2 font-medium text-slate-500 hover:text-indigo-600 focus:outline-none transition-all flex items-center gap-2 text-xs md:text-sm">
+                    <i class="fa-solid fa-file-signature"></i> 2. 校內測考/測驗/評估分析 (Sheet 2)
+                </button>
+            </div>
+
+            <!-- 1. Daily Lesson Section -->
+            <div id="tutorLessonSection" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between border-b pb-3 mb-4">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-list text-indigo-600"></i> 新增學生日常課堂學習評語
+                        </h2>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full">Google Sheet 1 連動</span>
+                    </div>
+
+                    <form id="tutorRecordForm" onsubmit="handleTutorSubmit(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">選擇學生 <span class="text-red-500">*</span></label>
+                                <select id="studentSelect" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <!-- Populated via JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">課堂日期 <span class="text-red-500">*</span></label>
+                                <input type="date" id="lessonDate" required class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">科目 <span class="text-red-500">*</span></label>
+                                <select id="subjectSelect" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="數學">小學數學班</option>
+                                    <option value="英文">英文專科班</option>
+                                    <option value="中文">中文寫作班</option>
+                                    <option value="常識">常識綜合班</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">功課/測驗表現</label>
+                                <select id="hwStatus" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="全部完成，準確率高">全部完成，準確率高</option>
+                                    <option value="完成，但有零星錯漏">完成，但有零星錯漏</option>
+                                    <option value="未完全完成/有欠交">未完全完成/有欠交</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Score Sliders -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <h3 class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                <span>三維能力評分 (1.0 - 10.0)</span>
+                                <span class="text-[10px] text-indigo-600 font-normal">拖動滑桿調整</span>
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-slate-600 font-medium">專注度</span>
+                                        <span id="focusScoreLabel" class="font-bold text-indigo-600">8.5 / 10</span>
+                                    </div>
+                                    <input type="range" id="focusScore" min="1" max="10" step="0.5" value="8.5" oninput="updateScoreLabels()" class="w-full accent-indigo-600 cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-slate-600 font-medium">主動性</span>
+                                        <span id="initiativeScoreLabel" class="font-bold text-emerald-600">8.0 / 10</span>
+                                    </div>
+                                    <input type="range" id="initiativeScore" min="1" max="10" step="0.5" value="8.0" oninput="updateScoreLabels()" class="w-full accent-emerald-600 cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-slate-600 font-medium">理解能力</span>
+                                        <span id="comprehensionScoreLabel" class="font-bold text-amber-600">8.5 / 10</span>
+                                    </div>
+                                    <input type="range" id="comprehensionScore" min="1" max="10" step="0.5" value="8.5" oninput="updateScoreLabels()" class="w-full accent-amber-500 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Cantonese Voice Bar (Powered by DeepSeek API) -->
+                        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 rounded-xl text-white space-y-3 shadow-md border border-indigo-500/30">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded uppercase">DeepSeek API</span>
+                                    <span class="text-xs font-bold text-amber-200">AI 廣東話語音輸入與智能整理</span>
+                                </div>
+                                <span class="text-[10px] text-slate-400"><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 自動潤飾口語</span>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                點擊下方按鈕進行廣東話口述，DeepSeek API 將在背後自動轉化為專業且具鼓勵性的「堂上評語」與「溫習建議」：
+                            </p>
+                            <button type="button" id="voiceInputBtn" onclick="toggleCantoneseRecording()" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold py-2.5 px-4 rounded-lg text-xs shadow-md transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-microphone text-amber-950 animate-pulse"></i> 按住口述廣東話 (DeepSeek 整理)
+                            </button>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">堂上表現評語</label>
+                            <textarea id="tutorComment" rows="3" placeholder="例如：課堂反應敏捷，分數四則混合計算掌握良好。能主動提出更快捷的解題方法。" required class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">溫習與改善建議</label>
+                            <textarea id="tutorAdvice" rows="2" placeholder="例如：建議回家多做 5 題進階應用題，保持解題速度與準確率。" required class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <div class="pt-2 flex gap-3">
+                            <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> 儲存並同步至 Google Sheet (Sheet 1)
+                            </button>
+                            <button type="button" onclick="document.getElementById('tutorRecordForm').reset(); updateScoreLabels();" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">
+                                重置
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Live Sheet 1 View -->
+                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between border border-slate-800">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                            <h3 class="font-bold text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-table text-emerald-400"></i> Google Sheets 模擬 (Sheet 1)
+                            </h3>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">即時連動中</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4">導師提交的課堂記錄會即時寫入後端試算表：</p>
+                        <div id="liveSheetLogs" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex justify-between items-center">
+                        <span>已備份至 Google Drive 雲端資料夾</span>
+                        <span class="text-emerald-400"><i class="fa-solid fa-shield-halved"></i> 權限隔離啟用</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. School Exam Analysis Section -->
+            <div id="tutorExamSection" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between border-b pb-3 mb-4">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 新增校內小測 / 測驗 / 評估 / 考試 評測評價
+                        </h2>
+                        <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full">Google Sheet 2 [School_Exams_Log]</span>
+                    </div>
+
+                    <form id="tutorExamForm" onsubmit="handleExamSubmit(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">選擇學生 <span class="text-red-500">*</span></label>
+                                <select id="examStudentSelect" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <!-- Populated via JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">評測類型 <span class="text-red-500">*</span></label>
+                                <select id="examTypeSelect" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="校內小測">校內小測 (Quiz)</option>
+                                    <option value="單元測驗">單元測驗 (Unit Test)</option>
+                                    <option value="學期評估">學期評估 (Assessment)</option>
+                                    <option value="期中/期末考試">期中/期末考試 (Exam)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">評測日期 <span class="text-red-500">*</span></label>
+                                <input type="date" id="examDate" required class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">科目 <span class="text-red-500">*</span></label>
+                                <select id="examSubjectSelect" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="數學">數學科</option>
+                                    <option value="英文">英文科</option>
+                                    <option value="中文">中文科</option>
+                                    <option value="常識">常識科</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">得分 / 滿分</label>
+                                <div class="flex gap-2 items-center">
+                                    <input type="number" id="examScore" placeholder="88" required min="0" max="100" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <span class="text-xs text-slate-400 font-bold">/</span>
+                                    <input type="number" id="examTotalScore" value="100" required class="w-20 text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">失分主要歸因</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <select id="carelessRatioSelect" class="text-xs border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                        <option value="粗心大意為主(>60%)">粗心大意為主</option>
+                                        <option value="粗心占約50%">粗心占50%</option>
+                                        <option value="粗心較少(<30%)">粗心較少</option>
+                                    </select>
+                                    <select id="conceptRatioSelect" class="text-xs border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                        <option value="概念不熟為主(>60%)">概念未熟為主</option>
+                                        <option value="概念占約50%">概念占50%</option>
+                                        <option value="概念不熟較少(<30%)">概念未熟較少</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DeepSeek Exam Voice Assistant -->
+                        <div class="bg-indigo-950 p-4 rounded-xl text-white space-y-2 border border-indigo-500/30">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-robot text-amber-400"></i> DeepSeek 廣東話測考分析助手
+                                </span>
+                                <span class="text-[10px] text-indigo-400">連動同一 Spreadsheet (Sheet 2)</span>
+                            </div>
+                            <button type="button" id="examVoiceInputBtn" onclick="toggleExamVoiceRecording()" class="w-full bg-indigo-800 hover:bg-indigo-700 text-indigo-100 font-bold py-2 px-3 rounded-lg text-xs transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-microphone text-indigo-300"></i> 口述測考表現 (DeepSeek API 整理)
+                            </button>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">錯題範疇與概念分析 (例如：哪些課題不熟、粗心錯漏細節等)</label>
+                            <textarea id="examAnalysisText" rows="3" placeholder="例如：主要失分於小數除法通分母過程，有 2 題因抄錯數字導致全題解答錯誤（粗心），1 題應用題未能理解題意（概念未熟）。" required class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">補習社跟進與改善方案</label>
+                            <textarea id="examActionPlanText" rows="2" placeholder="例如：下週補習課安排 15 分鐘專門進行「審題與驗算」特訓，改善抄錯數字問題。" required class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> 儲存校內測考評價至 Sheet 2 [School_Exams_Log]
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Live Sheet 2 View -->
+                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between border border-slate-800">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                            <h3 class="font-bold text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-table text-indigo-400"></i> Sheet 2: School_Exams_Log
+                            </h3>
+                            <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">同一 Spreadsheet</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4">校內測考評測記錄存於 Sheet 2 分頁：</p>
+                        <div id="liveExamSheetLogs" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex justify-between items-center">
+                        <span>測考檔案與錯題分析備份</span>
+                        <span class="text-indigo-400"><i class="fa-solid fa-chart-line"></i> 趨勢分析就緒</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PARENT VIEW ==================== -->
+        <section id="parentView" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-user-ninja"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">家長檢視專區 (受權限保護)</h2>
+                        <p class="text-xs text-slate-500">僅能讀取與閣下子女相關之日常評語與校內測考分析</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-700">切換學生：</label>
+                    <select id="parentStudentSelect" onchange="renderParentDashboard()" class="text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- AI & Visual Analytics Charts Section for Parent -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Chart 1: Line Chart for 3D Competency Trend Analysis -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex items-center justify-between border-b pb-3 mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-indigo-600"></i> 三維核心能力變化走勢圖 (專注/主動/理解)
+                        </h3>
+                        <span class="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded-full">歷次表現變動</span>
+                    </div>
+                    <div class="relative flex-grow min-h-[220px] flex items-center justify-center">
+                        <canvas id="competencyTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Line Chart for Exam Score Trend -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex items-center justify-between border-b pb-3 mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-award text-amber-500"></i> 校內測考成績與失分走勢
+                        </h3>
+                        <span class="text-[10px] bg-amber-50 text-amber-600 font-bold px-2 py-0.5 rounded-full">歷次表現</span>
+                    </div>
+                    <div class="relative flex-grow min-h-[220px] flex items-center justify-center">
+                        <canvas id="examTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Daily Lesson Timeline -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="text-base font-bold text-slate-800 border-b pb-3 mb-4 flex items-center justify-between">
+                        <span><i class="fa-solid fa-calendar-day text-indigo-600"></i> 日常課堂表現與評語 (Sheet 1)</span>
+                        <span class="text-xs text-indigo-600 font-normal">最新於最前</span>
+                    </h3>
+                    <div id="parentTimeline" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- School Exam Evaluation Timeline -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="text-base font-bold text-slate-800 border-b pb-3 mb-4 flex items-center justify-between">
+                        <span><i class="fa-solid fa-award text-amber-500"></i> 校內小測 / 測驗 / 評估結果分析 (Sheet 2)</span>
+                        <span class="text-xs text-amber-600 font-normal">錯題與改善方案</span>
+                    </h3>
+                    <div id="parentExamTimeline" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== ADMIN VIEW ==================== -->
+        <section id="adminView" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-database text-indigo-600"></i> 管理層總覽 - 同一 Google Spreadsheet (雙 Sheet 試算表)
+                        </h2>
+                        <p class="text-xs text-slate-500">試算表內包含 Sheet 1 [Daily_Lesson_Log] 及 Sheet 2 [School_Exams_Log]</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="adminTabSheet1Btn" onclick="switchAdminTab('sheet1')" class="px-4 py-2 font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none text-xs">
+                            Sheet 1: 日常評語
+                        </button>
+                        <button id="adminTabSheet2Btn" onclick="switchAdminTab('sheet2')" class="px-4 py-2 font-medium text-slate-500 hover:text-indigo-600 focus:outline-none text-xs">
+                            Sheet 2: 校內測考評測
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sheet 1 Table -->
+                <div id="adminSheet1Section" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 border-b text-slate-700">
+                                <th class="p-3">日期</th>
+                                <th class="p-3">學生</th>
+                                <th class="p-3">科目</th>
+                                <th class="p-3">分數 (專/主/理)</th>
+                                <th class="p-3">導師評語</th>
+                                <th class="p-3">Drive PDF 備份</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminSheet1Table" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sheet 2 Table -->
+                <div id="adminSheet2Section" class="hidden overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 border-b text-slate-700">
+                                <th class="p-3">測考日期</th>
+                                <th class="p-3">學生</th>
+                                <th class="p-3">類型/科目</th>
+                                <th class="p-3">得分</th>
+                                <th class="p-3">錯題與概念分析</th>
+                                <th class="p-3">跟進方案</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminSheet2Table" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const mockStudents = [
+            { id: 'STU001', name: '陳小明 (Lucas)', class: '小五 數學/英文專科班', parentEmail: 'parent.lucas@example.com' },
+            { id: 'STU002', name: '李心怡 (Chloe)', class: '小六 中文/常識綜合班', parentEmail: 'parent.chloe@example.com' },
+            { id: 'STU003', name: '張子軒 (Ethan)', class: '小四 數學加強班', parentEmail: 'parent.ethan@example.com' }
+        ];
+
+        let mockRecords = [
+            {
+                id: 'REC-1001',
+                studentId: 'STU001',
+                studentName: '陳小明 (Lucas)',
+                date: '2026-03-28',
+                subject: '數學',
+                focusScore: 8.5,
+                initiativeScore: 8.0,
+                comprehensionScore: 8.5,
+                hwStatus: '全部完成，準確率高',
+                comment: '課堂反應敏捷，分數四則混合計算掌握良好。能主動提出更快捷的解題方法。',
+                advice: '建議回家多做 5 題進階應用題，保持解題速度與準確率。',
+                drivePath: 'Google Drive/學員檔案/陳小明/20260328_數學評語.pdf'
+            },
+            {
+                id: 'REC-1002',
+                studentId: 'STU001',
+                studentName: '陳小明 (Lucas)',
+                date: '2026-03-24',
+                subject: '英文',
+                focusScore: 7.0,
+                initiativeScore: 6.5,
+                comprehensionScore: 7.5,
+                hwStatus: '完成，但有零星錯漏',
+                comment: '專注度受鄰近同學影響，文法 Tenses 概念清晰，但拼字（Spelling）有小疏忽。',
+                advice: '請家長每日抽 10 分鐘監督聽寫 5 個單詞。',
+                drivePath: 'Google Drive/學員檔案/陳小明/20260324_英文評語.pdf'
+            },
+            {
+                id: 'REC-1003',
+                studentId: 'STU001',
+                studentName: '陳小明 (Lucas)',
+                date: '2026-03-18',
+                subject: '中文',
+                focusScore: 8.0,
+                initiativeScore: 7.5,
+                comprehensionScore: 8.0,
+                hwStatus: '全部完成，準確率高',
+                comment: '成語運用能力進步明顯，作文段落結構清晰。',
+                advice: '可增加閱讀短篇修辭手法說明文章。',
+                drivePath: 'Google Drive/學員檔案/陳小明/20260318_中文評語.pdf'
+            }
+        ];
+
+        let mockExamRecords = [
+            {
+                id: 'EXAM-2001',
+                studentId: 'STU001',
+                studentName: '陳小明 (Lucas)',
+                date: '2026-03-25',
+                examType: '單元測驗',
+                subject: '數學',
+                score: 88,
+                totalScore: 100,
+                carelessRatio: '40% 粗心大意',
+                conceptRatio: '60% 概念未熟',
+                analysis: '主要失分於小數除法通分母過程，有 2 題因抄錯數字導致全題解答錯誤（粗心），1 題應用題未能理解題意。',
+                actionPlan: '下週補習課安排 15 分鐘專門進行「審題與驗算」特訓，改善抄錯數字問題。'
+            },
+            {
+                id: 'EXAM-2002',
+                studentId: 'STU001',
+                studentName: '陳小明 (Lucas)',
+                date: '2026-03-10',
+                examType: '校內小測',
+                subject: '數學',
+                score: 78,
+                totalScore: 100,
+                carelessRatio: '60% 粗心大意',
+                conceptRatio: '40% 概念未熟',
+                analysis: '計算速度快但粗心率較高，符號運算失誤較多。',
+                actionPlan: '要求每次作答完畢後必須強制檢查驗算 2 分鐘。'
+            },
+            {
+                id: 'EXAM-2003',
+                studentId: 'STU001',
+                studentName: '陳小明 (Lucas)',
+                date: '2026-02-20',
+                examType: '學期評估',
+                subject: '數學',
+                score: 72,
+                totalScore: 100,
+                carelessRatio: '30% 粗心大意',
+                conceptRatio: '70% 概念未熟',
+                analysis: '幾何圖形面積公式應用不熟悉，步驟遺漏。',
+                actionPlan: '加強幾何圖形公式記憶與綜合應用題訓練。'
+            }
+        ];
+
+        let competencyTrendChartInstance = null;
+        let lineChartInstance = null;
+
+        window.onload = function() {
+            populateStudentDropdowns();
+            renderLiveSheetLogs();
+            renderExamSheetLogs();
+            renderParentDashboard();
+            renderAdminAnalytics();
+            updateScoreLabels();
+        };
+
+        function switchRole(role) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${role}`).classList.add('active');
+
+            document.getElementById('tutorView').classList.add('hidden');
+            document.getElementById('parentView').classList.add('hidden');
+            document.getElementById('adminView').classList.add('hidden');
+
+            document.getElementById(`${role}View`).classList.remove('hidden');
+
+            if (role === 'parent') renderParentDashboard();
+            if (role === 'admin') renderAdminAnalytics();
+        }
+
+        function switchTutorTab(tab) {
+            document.getElementById('tutorTabLessonBtn').className = tab === 'lesson' ? 'px-4 py-2 font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none transition-all' : 'px-4 py-2 font-medium text-slate-500 hover:text-indigo-600 focus:outline-none transition-all';
+            document.getElementById('tutorTabExamBtn').className = tab === 'exam' ? 'px-4 py-2 font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none transition-all' : 'px-4 py-2 font-medium text-slate-500 hover:text-indigo-600 focus:outline-none transition-all';
+
+            document.getElementById('tutorLessonSection').classList.toggle('hidden', tab !== 'lesson');
+            document.getElementById('tutorExamSection').classList.toggle('hidden', tab !== 'exam');
+        }
+
+        function switchAdminTab(tab) {
+            document.getElementById('adminTabSheet1Btn').className = tab === 'sheet1' ? 'px-4 py-2 font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none transition-all' : 'px-4 py-2 font-medium text-slate-500 hover:text-indigo-600 focus:outline-none transition-all';
+            document.getElementById('adminTabSheet2Btn').className = tab === 'sheet2' ? 'px-4 py-2 font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none transition-all' : 'px-4 py-2 font-medium text-slate-500 hover:text-indigo-600 focus:outline-none transition-all';
+
+            document.getElementById('adminSheet1Section').classList.toggle('hidden', tab !== 'sheet1');
+            document.getElementById('adminSheet2Section').classList.toggle('hidden', tab !== 'sheet2');
+        }
+
+        function populateStudentDropdowns() {
+            const tutorSelect = document.getElementById('studentSelect');
+            const examSelect = document.getElementById('examStudentSelect');
+            const parentSelect = document.getElementById('parentStudentSelect');
+
+            if (tutorSelect) tutorSelect.innerHTML = '';
+            if (examSelect) examSelect.innerHTML = '';
+            if (parentSelect) parentSelect.innerHTML = '';
+
+            mockStudents.forEach(stu => {
+                if (tutorSelect) tutorSelect.innerHTML += `<option value="${stu.id}">${stu.name} (${stu.class})</option>`;
+                if (examSelect) examSelect.innerHTML += `<option value="${stu.id}">${stu.name} (${stu.class})</option>`;
+                if (parentSelect) parentSelect.innerHTML += `<option value="${stu.id}">${stu.name} (${stu.parentEmail})</option>`;
+            });
+        }
+
+        function updateScoreLabels() {
+            const focusElem = document.getElementById('focusScore');
+            const initiativeElem = document.getElementById('initiativeScore');
+            const comprehensionElem = document.getElementById('comprehensionScore');
+
+            if (focusElem && document.getElementById('focusScoreLabel')) {
+                const focus = parseFloat(focusElem.value || 8.5).toFixed(1);
+                document.getElementById('focusScoreLabel').innerText = `${focus} / 10`;
+            }
+            if (initiativeElem && document.getElementById('initiativeScoreLabel')) {
+                const initiative = parseFloat(initiativeElem.value || 8.0).toFixed(1);
+                document.getElementById('initiativeScoreLabel').innerText = `${initiative} / 10`;
+            }
+            if (comprehensionElem && document.getElementById('comprehensionScoreLabel')) {
+                const comprehension = parseFloat(comprehensionElem.value || 8.5).toFixed(1);
+                document.getElementById('comprehensionScoreLabel').innerText = `${comprehension} / 10`;
+            }
+        }
+
+        function handleTutorSubmit(e) {
+            e.preventDefault();
+            const studentId = document.getElementById('studentSelect').value;
+            const student = mockStudents.find(s => s.id === studentId);
+            const focusScore = parseFloat(document.getElementById('focusScore').value);
+            const initiativeScore = parseFloat(document.getElementById('initiativeScore').value);
+            const comprehensionScore = parseFloat(document.getElementById('comprehensionScore').value);
+
+            const newRec = {
+                id: `REC-${Date.now().toString().slice(-4)}`,
+                studentId: studentId,
+                studentName: student.name,
+                date: document.getElementById('lessonDate').value || new Date().toISOString().split('T')[0],
+                subject: document.getElementById('subjectSelect').value,
+                focusScore: focusScore,
+                initiativeScore: initiativeScore,
+                comprehensionScore: comprehensionScore,
+                hwStatus: document.getElementById('hwStatus').value,
+                comment: document.getElementById('tutorComment').value,
+                advice: document.getElementById('tutorAdvice').value,
+                drivePath: `Google Drive/學員檔案/${student.name.split(' ')[0]}/${document.getElementById('lessonDate').value}_${document.getElementById('subjectSelect').value}評語.pdf`
+            };
+
+            mockRecords.unshift(newRec);
+            renderLiveSheetLogs();
+            showTemporaryToast('✨ 數據已成功寫入 Google Sheet 1 並且生成 PDF 存檔至 Google Drive！');
+            document.getElementById('tutorRecordForm').reset();
+            updateScoreLabels();
+        }
+
+        function handleExamSubmit(e) {
+            e.preventDefault();
+            const studentId = document.getElementById('examStudentSelect').value;
+            const student = mockStudents.find(s => s.id === studentId);
+
+            const newExamRec = {
+                id: `EXAM-${Date.now().toString().slice(-4)}`,
+                studentId: studentId,
+                studentName: student.name,
+                date: document.getElementById('examDate').value || new Date().toISOString().split('T')[0],
+                examType: document.getElementById('examTypeSelect').value,
+                subject: document.getElementById('examSubjectSelect').value,
+                score: parseFloat(document.getElementById('examScore').value || 0),
+                totalScore: parseFloat(document.getElementById('examTotalScore').value || 100),
+                carelessRatio: document.getElementById('carelessRatioSelect').value,
+                conceptRatio: document.getElementById('conceptRatioSelect').value,
+                analysis: document.getElementById('examAnalysisText').value,
+                actionPlan: document.getElementById('examActionPlanText').value
+            };
+
+            mockExamRecords.unshift(newExamRec);
+            renderExamSheetLogs();
+            showTemporaryToast('✨ 校內測考評測分析已新增至 Sheet 2 [School_Exams_Log]！');
+            document.getElementById('tutorExamForm').reset();
+        }
+
+        function processCantoneseSpeechToForm() {
+            const subject = document.getElementById('subjectSelect') ? document.getElementById('subjectSelect').value : '數學';
+            const focusElem = document.getElementById('focusScore');
+            const focus = focusElem ? parseFloat(focusElem.value) : 8.5;
+
+            let aiComment = `[DeepSeek API 整理] 學員今日於${subject}課堂態度認真，專注度良好（評分 ${focus} 分）。能迅速理解基本概念，但在運算細節上仍需注意通分母。`;
+            let aiAdvice = `建議回家鞏固基礎算式步驟，完成 3 題計算題目練習以加強記憶。`;
+
+            if (document.getElementById('tutorComment')) document.getElementById('tutorComment').value = aiComment;
+            if (document.getElementById('tutorAdvice')) document.getElementById('tutorAdvice').value = aiAdvice;
+
+            showTemporaryToast('✨ DeepSeek API 已成功整理廣東話並填寫評語！');
+        }
+
+        function processExamSpeechToForm() {
+            const examType = document.getElementById('examTypeSelect') ? document.getElementById('examTypeSelect').value : '測驗';
+            const subject = document.getElementById('examSubjectSelect') ? document.getElementById('examSubjectSelect').value : '數學';
+
+            let aiAnalysis = `[DeepSeek API 整理] 學生於本次${examType}(${subject})表現尚可，主要失分源於題目審題過快，約有 40% 為粗心計算錯誤，60% 為應用題概念未全明瞭。`;
+            let aiPlan = `針對錯題課題，補習社將於下週課堂安排 20 分鐘專題強化訓練，重點訓練驗算習慣。`;
+
+            if (document.getElementById('examAnalysisText')) document.getElementById('examAnalysisText').value = aiAnalysis;
+            if (document.getElementById('examActionPlanText')) document.getElementById('examActionPlanText').value = aiPlan;
+
+            showTemporaryToast('✨ DeepSeek API 已整理測考語音並填入分析欄位！');
+        }
+
+        function toggleCantoneseRecording() {
+            const btn = document.getElementById('voiceInputBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-300"></i> DeepSeek 廣東話錄音與分析中...`;
+            btn.classList.replace('from-amber-500', 'from-amber-600');
+
+            setTimeout(() => {
+                processCantoneseSpeechToForm();
+                btn.innerHTML = `<i class="fa-solid fa-microphone text-amber-300 animate-pulse"></i> 按住口述廣東話 (DeepSeek 整理)`;
+                btn.classList.replace('from-amber-600', 'from-amber-500');
+            }, 1500);
+        }
+
+        function toggleExamVoiceRecording() {
+            const btn = document.getElementById('examVoiceInputBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-300"></i> DeepSeek 語音分析中...`;
+
+            setTimeout(() => {
+                processExamSpeechToForm();
+                btn.innerHTML = `<i class="fa-solid fa-microphone text-indigo-300"></i> 口述測考表現 (DeepSeek API 整理)`;
+            }, 1500);
+        }
+
+        function renderLiveSheetLogs() {
+            const container = document.getElementById('liveSheetLogs');
+            if (!container) return;
+            container.innerHTML = '';
+
+            mockRecords.forEach(rec => {
+                container.innerHTML += `
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 text-xs text-slate-300 space-y-1">
+                        <div class="flex justify-between font-bold text-white">
+                            <span>${rec.studentName} [${rec.subject}]</span>
+                            <span class="text-emerald-400">${rec.date}</span>
+                        </div>
+                        <div class="flex gap-2 text-[11px] text-amber-300 font-medium">
+                            <span>專注: ${rec.focusScore}</span> | <span>主動: ${rec.initiativeScore}</span> | <span>理解: ${rec.comprehensionScore}</span>
+                        </div>
+                        <div class="truncate text-slate-400">評語: ${rec.comment}</div>
+                        <div class="text-[10px] text-indigo-300 flex items-center gap-1">
+                            <i class="fa-solid fa-folder text-amber-400"></i> ${rec.drivePath}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderExamSheetLogs() {
+            const container = document.getElementById('liveExamSheetLogs');
+            if (!container) return;
+            container.innerHTML = '';
+
+            mockExamRecords.forEach(rec => {
+                container.innerHTML += `
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 text-xs text-slate-300 space-y-1">
+                        <div class="flex justify-between font-bold text-white">
+                            <span>${rec.studentName} [${rec.examType} - ${rec.subject}]</span>
+                            <span class="text-indigo-400">${rec.score} / ${rec.totalScore}分</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400">
+                            失分要因: <span class="text-amber-300">${rec.carelessRatio}</span> / <span class="text-emerald-300">${rec.conceptRatio}</span>
+                        </div>
+                        <div class="truncate text-slate-300">錯題分析: ${rec.analysis}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderParentDashboard() {
+            const parentStuId = document.getElementById('parentStudentSelect') ? document.getElementById('parentStudentSelect').value : 'STU001';
+            const student = mockStudents.find(s => s.id === parentStuId) || mockStudents[0];
+
+            const stuRecords = mockRecords.filter(r => r.studentId === parentStuId);
+            const stuExams = mockExamRecords.filter(r => r.studentId === parentStuId);
+
+            // Render Timeline Records
+            const timeline = document.getElementById('parentTimeline');
+            if (timeline) {
+                timeline.innerHTML = '';
+                if (stuRecords.length === 0) {
+                    timeline.innerHTML = `<p class="text-sm text-slate-500">暫無日常課堂紀錄。</p>`;
+                } else {
+                    stuRecords.forEach(rec => {
+                        timeline.innerHTML += `
+                            <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm space-y-2">
+                                <div class="flex justify-between items-center border-b pb-2">
+                                    <span class="font-bold text-slate-800 text-sm">${rec.date} (${rec.subject})</span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">${rec.hwStatus}</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-xs py-1 bg-slate-50 rounded-lg">
+                                    <div><span class="text-slate-500">專注度</span> <p class="font-bold text-indigo-600">${rec.focusScore}</p></div>
+                                    <div><span class="text-slate-500">主動性</span> <p class="font-bold text-emerald-600">${rec.initiativeScore}</p></div>
+                                    <div><span class="text-slate-500">理解力</span> <p class="font-bold text-amber-600">${rec.comprehensionScore}</p></div>
+                                </div>
+                                <p class="text-xs text-slate-700"><strong>導師評語：</strong>${rec.comment}</p>
+                                <p class="text-xs text-indigo-600 bg-indigo-50 p-2 rounded-lg"><strong>溫習建議：</strong>${rec.advice}</p>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            const examContainer = document.getElementById('parentExamTimeline');
+            if (examContainer) {
+                examContainer.innerHTML = '';
+                if (stuExams.length === 0) {
+                    examContainer.innerHTML = `<p class="text-sm text-slate-500">暫無校內測考評測紀錄。</p>`;
+                } else {
+                    stuExams.forEach(rec => {
+                        examContainer.innerHTML += `
+                            <div class="bg-white border border-indigo-200 p-4 rounded-xl shadow-sm space-y-2">
+                                <div class="flex justify-between items-center border-b pb-2">
+                                    <span class="font-bold text-indigo-900 text-sm">${rec.date} [${rec.examType}] - ${rec.subject}</span>
+                                    <span class="text-sm font-black text-indigo-600">${rec.score} / ${rec.totalScore} 分</span>
+                                </div>
+                                <div class="flex gap-2 text-xs">
+                                    <span class="px-2 py-1 bg-amber-50 text-amber-700 rounded border border-amber-200">粗心錯誤: ${rec.carelessRatio}</span>
+                                    <span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded border border-emerald-200">概念不熟: ${rec.conceptRatio}</span>
+                                </div>
+                                <p class="text-xs text-slate-700"><strong>錯題範疇分析：</strong>${rec.analysis}</p>
+                                <p class="text-xs text-indigo-700 bg-indigo-50 p-2 rounded-lg"><strong>補救跟進方案：</strong>${rec.actionPlan}</p>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            // Prepare Competency Trend Data (Sorted chronological)
+            const sortedRecords = [...stuRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const trendLabels = sortedRecords.map(r => `${r.date.slice(5)} (${r.subject})`);
+            const focusData = sortedRecords.map(r => r.focusScore);
+            const initiativeData = sortedRecords.map(r => r.initiativeScore);
+            const comprehensionData = sortedRecords.map(r => r.comprehensionScore);
+
+            renderCompetencyTrendChart(trendLabels, focusData, initiativeData, comprehensionData);
+
+            // Update Exam Trend Line Chart
+            const sortedExams = [...stuExams].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const examLabels = sortedExams.map(e => `${e.date.slice(5)} (${e.subject})`);
+            const examScores = sortedExams.map(e => e.score);
+
+            renderExamTrendChart(examLabels, examScores);
+        }
+
+        function renderCompetencyTrendChart(labels, focusData, initiativeData, comprehensionData) {
+            const ctx = document.getElementById('competencyTrendChart');
+            if (!ctx) return;
+
+            if (competencyTrendChartInstance) competencyTrendChartInstance.destroy();
+
+            competencyTrendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['暫無數據'],
+                    datasets: [
+                        {
+                            label: '專注度 (Focus)',
+                            data: focusData.length > 0 ? focusData : [0],
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            tension: 0.2,
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            fill: false
+                        },
+                        {
+                            label: '主動性 (Initiative)',
+                            data: initiativeData.length > 0 ? initiativeData : [0],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.2,
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            fill: false
+                        },
+                        {
+                            label: '理解能力 (Comprehension)',
+                            data: comprehensionData.length > 0 ? comprehensionData : [0],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.2,
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 10,
+                            ticks: { stepSize: 2, font: { size: 10 } }
+                        },
+                        x: {
+                            ticks: { font: { size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: { boxWidth: 12, font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderExamTrendChart(labels, dataScores) {
+            const ctx = document.getElementById('examTrendChart');
+            if (!ctx) return;
+
+            if (lineChartInstance) lineChartInstance.destroy();
+
+            lineChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['暫無數據'],
+                    datasets: [{
+                        label: '測考得分 (100 分制)',
+                        data: dataScores.length > 0 ? dataScores : [0],
+                        borderColor: '#d97706',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#b45309'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: { stepSize: 20 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function renderAdminAnalytics() {
+            const table1 = document.getElementById('adminSheet1Table');
+            if (table1) {
+                table1.innerHTML = '';
+                mockRecords.forEach(rec => {
+                    table1.innerHTML += `
+                        <tr class="border-b hover:bg-slate-50">
+                            <td class="p-3">${rec.date}</td>
+                            <td class="p-3 font-semibold text-slate-800">${rec.studentName}</td>
+                            <td class="p-3">${rec.subject}</td>
+                            <td class="p-3 font-bold text-indigo-600">${rec.focusScore} / ${rec.initiativeScore} / ${rec.comprehensionScore}</td>
+                            <td class="p-3 max-w-xs truncate">${rec.comment}</td>
+                            <td class="p-3 text-indigo-600 underline text-xs cursor-pointer"><i class="fa-regular fa-file-pdf"></i> PDF 查看</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const table2 = document.getElementById('adminSheet2Table');
+            if (table2) {
+                table2.innerHTML = '';
+                mockExamRecords.forEach(rec => {
+                    table2.innerHTML += `
+                        <tr class="border-b hover:bg-slate-50">
+                            <td class="p-3">${rec.date}</td>
+                            <td class="p-3 font-semibold text-slate-800">${rec.studentName}</td>
+                            <td class="p-3">${rec.examType} (${rec.subject})</td>
+                            <td class="p-3 font-bold text-indigo-600">${rec.score} / ${rec.totalScore}</td>
+                            <td class="p-3 max-w-xs truncate">${rec.analysis}</td>
+                            <td class="p-3 text-indigo-600">${rec.actionPlan}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function showTemporaryToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl z-50 border border-indigo-500/50 flex items-center gap-2 animate-bounce';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${msg}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+    </script>
+</body>
+</html>
